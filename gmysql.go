@@ -18,8 +18,8 @@ import (
 
 // Mysql mysql
 type Mysql struct {
-	cursor 	*sql.DB
-	option	*Option
+	cursor *sql.DB
+	option *Option
 }
 
 // ShowOption show mysql option
@@ -50,7 +50,7 @@ func (s *Mysql) ShowTables() (tables []string) {
 	return tables
 }
 
-// Insert insert data
+// Insert insert data 直接执行的方式
 func (s Mysql) Insert(table string, fields []string, values ...[]interface{}) (sql.Result, error) {
 	sql := fmt.Sprintf("insert ignore %s(%s) values", table, strings.Join(fields, ","))
 	fieldsNum := len(fields)
@@ -75,6 +75,36 @@ func (s Mysql) Insert(table string, fields []string, values ...[]interface{}) (s
 		log.Printf("insert failed: %s, sql: %s, fill: %v", err.Error(), sql, fill)
 	}
 	return ret, err
+}
+
+// PrepareInsert insert data  预处理方式
+func (s Mysql) PrepareInsert(table string, fields []string, values ...[]interface{}) int64 {
+	sql := fmt.Sprintf("insert ignore %s(%s) values", table, strings.Join(fields, ","))
+	var placeholders []string
+	for range fields {
+		placeholders = append(placeholders, "?")
+	}
+	var extension = fmt.Sprintf("(%s)", strings.Join(placeholders, ","))
+	sql += extension
+	stmt, err := s.cursor.Prepare(sql)
+	if err != nil {
+		log.Printf("Prepare failed: %s, sql: %s", err.Error(), err)
+		return 0
+	}
+	defer stmt.Close()
+	var lastID int64
+	for _, value := range values {
+		ret, err := stmt.Exec(value...)
+		if err != nil {
+			log.Printf("insert value failed: %s, fields: %v, value: %v", err.Error(), fields, value)
+			continue
+		}
+		lastID, err = ret.LastInsertId()
+		if err != nil {
+			log.Printf("fetch LastInsertId failed: %s", err.Error())
+		}
+	}
+	return lastID
 }
 
 // SelectOne 查询一条数据 不支持select *
@@ -131,19 +161,19 @@ func (s *Mysql) Select(table string, fields []string, condition string, fill ...
 
 // Update update data
 func (s *Mysql) Update(
-		table string, 
-		data map[string]interface{}, 
-		condition string, 
-		fill ...interface{},
-	) (sql.Result, error) {
+	table string,
+	data map[string]interface{},
+	condition string,
+	fill ...interface{},
+) (sql.Result, error) {
 	sql := fmt.Sprintf("update %s set ", table)
 	var valFill []interface{}
 	var extensions []string
 	for k, v := range data {
-		extensions = append(extensions, k + "=?")
+		extensions = append(extensions, k+"=?")
 		valFill = append(valFill, v)
 	}
-	sql += strings.Join(extensions, ",") 
+	sql += strings.Join(extensions, ",")
 	if condition != "" {
 		sql += " " + condition + ";"
 		valFill = append(valFill, fill...)
@@ -221,7 +251,7 @@ func NewMysql(option *Option) *Mysql {
 		panic(fmt.Sprintf("connect mysql failed: %s", err.Error()))
 	}
 	mysql := &Mysql{
-		cursor: 	db,
+		cursor: db,
 		option: option,
 	}
 	mysql.init()

@@ -11,17 +11,16 @@ import (
 	"time"
 )
 
-
 // Option 实例化mysql的参数
 type Option struct {
-	Addr     		string
-	Username 		string
-	Password 		string
-	Database 		string
-	Charset  		string
-	MaxOpenConns	int
-	MaxIdleConns	int
-	MaxLifeTime		time.Duration
-	MaxIdleTime		time.Duration
-	driver   		string
+	Addr         string
+	Username     string
+	Password     string
+	Database     string
+	Charset      string
+	MaxOpenConns int
+	MaxIdleConns int
+	MaxLifeTime  time.Duration
+	MaxIdleTime  time.Duration
+	driver       string
 }

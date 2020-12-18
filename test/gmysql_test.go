@@ -1,15 +1,15 @@
 package test
 
 import (
-	"testing"
 	"github.com/sgs921107/gmysql"
+	"testing"
 )
 
 var option = &gmysql.Option{
-	Addr: "172.17.0.1:3306",
+	Addr:     "172.17.0.1:3306",
 	Username: "work",
 	Password: "online",
-	Charset: "utf8mb4",
+	Charset:  "utf8mb4",
 	Database: "sql_test",
 }
 
@@ -17,20 +17,18 @@ var mysql = gmysql.NewMysql(option)
 var table = "user"
 
 var createTableSQL = "CREATE TABLE user (" +
-    	"`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT," +
-    	"`name` VARCHAR(20) NOT NULL DEFAULT ''," +
-    	"`age` INT(11) NOT NULL DEFAULT '0'," +
-		"PRIMARY KEY(`id`)," +
-		"UNiQUE INDEX `name`(`name`) USING BTREE" +
+	"`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT," +
+	"`name` VARCHAR(20) NOT NULL DEFAULT ''," +
+	"`age` INT(11) NOT NULL DEFAULT '0'," +
+	"PRIMARY KEY(`id`)," +
+	"UNiQUE INDEX `name`(`name`) USING BTREE" +
 	")ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;"
 
 func TestExec(t *testing.T) {
 	sql := "drop table " + table
-	_, err := mysql.Exec(sql)
-	if err != nil {
-		t.Errorf("drop table failed: %s", err.Error())
-	}
-	_, err = mysql.Exec(createTableSQL)
+	// 尝试删除表
+	mysql.Exec(sql)
+	_, err := mysql.Exec(createTableSQL)
 	if err != nil {
 		t.Errorf("create table failed: %s", err.Error())
 	}
@@ -47,9 +45,16 @@ func TestShowTables(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
-	_, err := mysql.Insert(table, []string{"name", "age"}, []interface{}{"Tom", 19}, []interface{}{"Jane", "20"})
+	_, err := mysql.Insert(table, []string{"name", "age"}, []interface{}{"Mike", 15}, []interface{}{"Shine", "28"})
 	if err != nil {
 		t.Errorf("insert err: %s", err.Error())
+	}
+}
+
+func TestPrepareInsert(t *testing.T) {
+	id := mysql.PrepareInsert(table, []string{"name", "age"}, []interface{}{"Tom", 19}, []interface{}{"Jane", "20"})
+	if id != 4 {
+		t.Errorf("prepare insert err: want id == 4, have %d", id)
 	}
 }
 
