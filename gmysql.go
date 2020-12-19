@@ -18,13 +18,13 @@ import (
 
 // Mysql mysql
 type Mysql struct {
-	cursor *sql.DB
-	option *Option
+	cursor  *sql.DB
+	options *Options
 }
 
-// ShowOption show mysql option
-func (s *Mysql) ShowOption() Option {
-	return *s.option
+// ShowOptions show mysql options
+func (s *Mysql) ShowOptions() Options {
+	return *s.options
 }
 
 // GetCursor 获取一个cursor
@@ -227,32 +227,32 @@ func (s *Mysql) Close() {
 
 // init  init mysql settings
 func (s *Mysql) init() {
-	s.cursor.SetMaxOpenConns(s.option.MaxOpenConns)
-	s.cursor.SetMaxIdleConns(s.option.MaxIdleConns)
-	s.cursor.SetConnMaxLifetime(s.option.MaxLifeTime)
-	s.cursor.SetConnMaxIdleTime(s.option.MaxIdleTime)
+	s.cursor.SetMaxOpenConns(s.options.MaxOpenConns)
+	s.cursor.SetMaxIdleConns(s.options.MaxIdleConns)
+	s.cursor.SetConnMaxLifetime(s.options.MaxLifeTime)
+	s.cursor.SetConnMaxIdleTime(s.options.MaxIdleTime)
 }
 
 // NewMysql 实例化一个mysql
-func NewMysql(option *Option) *Mysql {
-	option.driver = "mysql"
+func NewMysql(options *Options) *Mysql {
+	options.driver = "mysql"
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s)/%s",
-		option.Username,
-		option.Password,
-		option.Addr,
-		option.Database,
+		options.Username,
+		options.Password,
+		options.Addr,
+		options.Database,
 	)
-	if option.Charset != "" {
-		dsn += fmt.Sprintf("?charset=%s", option.Charset)
+	if options.Charset != "" {
+		dsn += fmt.Sprintf("?charset=%s", options.Charset)
 	}
-	db, err := sql.Open(option.driver, dsn)
+	db, err := sql.Open(options.driver, dsn)
 	if err != nil {
 		panic(fmt.Sprintf("connect mysql failed: %s", err.Error()))
 	}
 	mysql := &Mysql{
-		cursor: db,
-		option: option,
+		cursor:  db,
+		options: options,
 	}
 	mysql.init()
 	return mysql

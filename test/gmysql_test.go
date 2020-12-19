@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-var option = &gmysql.Option{
+var options = &gmysql.Options{
 	Addr:     "172.17.0.1:3306",
 	Username: "work",
 	Password: "online",
@@ -13,7 +13,7 @@ var option = &gmysql.Option{
 	Database: "sql_test",
 }
 
-var mysql = gmysql.NewMysql(option)
+var mysql = gmysql.NewMysql(options)
 var table = "user"
 
 var createTableSQL = "CREATE TABLE user (" +

@@ -12,7 +12,7 @@ import (
 )
 
 // Option 实例化mysql的参数
-type Option struct {
+type Options struct {
 	Addr         string
 	Username     string
 	Password     string
