@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// Option 实例化mysql的参数
+// Options 实例化mysql的参数
 type Options struct {
 	Addr         string
 	Username     string

@@ -72,7 +72,7 @@ func TestSelectOne(t *testing.T) {
 	data := mysql.SelectOne(table, []string{"age"}, "where name=?", "Tom")
 	age := data["age"]
 	if age != "30" {
-		t.Errorf(`data["age"] == %s, want "30"`, age)
+		t.Errorf(`data["age"] == "%s", want "30"`, age)
 	}
 }
 

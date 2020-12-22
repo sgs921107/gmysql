@@ -10,11 +10,12 @@ package gmysql
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 )
+
+var log = Logging.GetLogger()
 
 // Mysql mysql
 type Mysql struct {
@@ -43,6 +44,9 @@ func (s *Mysql) ShowTables() (tables []string) {
 		var table string
 		err := rows.Scan(&table)
 		if err != nil {
+			log.WithFields(LogFields{
+				"errMsg": err.Error(),
+			}).Error("Scan Error")
 			break
 		}
 		tables = append(tables, table)
@@ -63,18 +67,18 @@ func (s Mysql) Insert(table string, fields []string, values ...[]interface{}) (s
 	var fill []interface{}
 	for _, value := range values {
 		if len(value) != fieldsNum {
-			log.Printf("ValueError: fields length is not equal to value length, fields %v, value: %v", fields, value)
+			log.WithFields(LogFields{
+				"fields": fields,
+				"fill": fill,
+				"errMsg": "fields length is not equal to value length",
+			}).Error("ValueError")
 			continue
 		}
 		extensions = append(extensions, extension)
 		fill = append(fill, value...)
 	}
 	sql += strings.Join(extensions, ",") + ";"
-	ret, err := s.cursor.Exec(sql, fill...)
-	if err != nil {
-		log.Printf("insert failed: %s, sql: %s, fill: %v", err.Error(), sql, fill)
-	}
-	return ret, err
+	return s.cursor.Exec(sql, fill...)
 }
 
 // PrepareInsert insert data  预处理方式
@@ -88,7 +92,10 @@ func (s Mysql) PrepareInsert(table string, fields []string, values ...[]interfac
 	sql += extension
 	stmt, err := s.cursor.Prepare(sql)
 	if err != nil {
-		log.Printf("Prepare failed: %s, sql: %s", err.Error(), err)
+		log.WithFields(LogFields{
+			"sql": sql,
+			"errMsg": err.Error(),
+		}).Error("Prepare failed")
 		return 0
 	}
 	defer stmt.Close()
@@ -96,12 +103,19 @@ func (s Mysql) PrepareInsert(table string, fields []string, values ...[]interfac
 	for _, value := range values {
 		ret, err := stmt.Exec(value...)
 		if err != nil {
-			log.Printf("insert value failed: %s, fields: %v, value: %v", err.Error(), fields, value)
+			log.WithFields(LogFields{
+				"sql": sql,
+				"fields": fields,
+				"value": value,
+				"errMsg": err.Error(),
+			}).Error("insert value failed")
 			continue
 		}
 		lastID, err = ret.LastInsertId()
 		if err != nil {
-			log.Printf("fetch LastInsertId failed: %s", err.Error())
+			log.WithFields(LogFields{
+				"errMsg": err.Error(),
+			}).Error("Fetch LastInsertId failed")
 		}
 	}
 	return lastID
@@ -118,7 +132,12 @@ func (s *Mysql) SelectOne(table string, fields []string, condition string, fill 
 	}
 	err := row.Scan(scaner...)
 	if err != nil {
-		log.Printf("select failed: %s, sql: %s, fill: %v", err.Error(), sql, fill)
+		// 空数据也会引发错误，使用debug
+		log.WithFields(LogFields{
+			"sql": sql,
+			"fill": fill,
+			"errMsg": err.Error(),
+		}).Debug("Select failed")
 		return nil
 	}
 	var result = make(map[string]string)
@@ -134,7 +153,12 @@ func (s *Mysql) Select(table string, fields []string, condition string, fill ...
 	sql := fmt.Sprintf("select %s from %s %s;", strings.Join(fields, ","), table, condition)
 	rows, err := s.cursor.Query(sql, fill...)
 	if err != nil {
-		log.Printf("select failed: %s, sql: %s, fill: %v", err.Error(), sql, fill)
+		// 空数据也会引发错误，使用debug
+		log.WithFields(LogFields{
+			"sql": sql,
+			"fill": fill,
+			"errMsg": err.Error(),
+		}).Debug("Select failed")
 		return results
 	}
 	defer rows.Close()
@@ -146,7 +170,9 @@ func (s *Mysql) Select(table string, fields []string, condition string, fill ...
 		}
 		err := rows.Scan(scaner...)
 		if err != nil {
-			log.Printf("Scan Error: %s", err.Error())
+			log.WithFields(LogFields{
+				"errMsg": err.Error(),
+			}).Error("Scan Error")
 			continue
 		}
 		var item = make(map[string]string, len(fields))
@@ -178,21 +204,13 @@ func (s *Mysql) Update(
 		sql += " " + condition + ";"
 		valFill = append(valFill, fill...)
 	}
-	ret, err := s.cursor.Exec(sql, valFill...)
-	if err != nil {
-		log.Printf("update data failed: %s, sql: %s, fill: %v", err.Error(), sql, valFill)
-	}
-	return ret, err
+	return s.cursor.Exec(sql, valFill...)
 }
 
 // Delete delete
 func (s *Mysql) Delete(table, condition string, fill ...interface{}) (sql.Result, error) {
 	sql := fmt.Sprintf("delete from %s %s;", table, condition)
-	ret, err := s.cursor.Exec(sql, fill...)
-	if err != nil {
-		log.Printf("delete data failed: %s, sql: %s, fill: %v", err.Error(), sql, fill)
-	}
-	return ret, err
+	return s.cursor.Exec(sql, fill...)
 }
 
 // Exec exec a sql statement
