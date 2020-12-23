@@ -69,7 +69,7 @@ func (s Mysql) Insert(table string, fields []string, values ...[]interface{}) (s
 		if len(value) != fieldsNum {
 			log.WithFields(LogFields{
 				"fields": fields,
-				"fill": fill,
+				"fill":   fill,
 				"errMsg": "fields length is not equal to value length",
 			}).Error("ValueError")
 			continue
@@ -93,7 +93,7 @@ func (s Mysql) PrepareInsert(table string, fields []string, values ...[]interfac
 	stmt, err := s.cursor.Prepare(sql)
 	if err != nil {
 		log.WithFields(LogFields{
-			"sql": sql,
+			"sql":    sql,
 			"errMsg": err.Error(),
 		}).Error("Prepare failed")
 		return 0
@@ -104,9 +104,9 @@ func (s Mysql) PrepareInsert(table string, fields []string, values ...[]interfac
 		ret, err := stmt.Exec(value...)
 		if err != nil {
 			log.WithFields(LogFields{
-				"sql": sql,
+				"sql":    sql,
 				"fields": fields,
-				"value": value,
+				"value":  value,
 				"errMsg": err.Error(),
 			}).Error("insert value failed")
 			continue
@@ -149,12 +149,12 @@ func (s Mysql) PrepareInsert(table string, fields []string, values ...[]interfac
 
 // baseSelect exec a select statement
 func (s *Mysql) baseSelect(
-	distinct bool, 
-	table string, 
-	fields []string, 
-	condition string, 
+	distinct bool,
+	table string,
+	fields []string,
+	condition string,
 	fill ...interface{},
-	) (results []map[string]string) {
+) (results []map[string]string) {
 	var sql string
 	if distinct {
 		sql = fmt.Sprintf("select distinct %s from %s %s;", strings.Join(fields, ","), table, condition)
@@ -165,8 +165,8 @@ func (s *Mysql) baseSelect(
 	if err != nil {
 		// 空数据也会引发错误，使用debug
 		log.WithFields(LogFields{
-			"sql": sql,
-			"fill": fill,
+			"sql":    sql,
+			"fill":   fill,
 			"errMsg": err.Error(),
 		}).Debug("Select failed")
 		return results
@@ -176,14 +176,6 @@ func (s *Mysql) baseSelect(
 	if err != nil {
 		log.WithFields(LogFields{
 			"errMsg": err.Error(),
-		}).Error("Fetch columns failed")
-		return results
-	}
-	if len(columns) != len(fields) {
-		log.WithFields(LogFields{
-			"fields": fields,
-			"columns": columns,
-			"errMsg": "fields length is not equal to columns length",
 		}).Error("Fetch columns failed")
 		return results
 	}
@@ -212,21 +204,21 @@ func (s *Mysql) baseSelect(
 
 // Select exec a select statement
 func (s *Mysql) Select(
-	table string, 
-	fields []string, 
-	condition string, 
+	table string,
+	fields []string,
+	condition string,
 	fill ...interface{},
-	) (results []map[string]string) {
+) (results []map[string]string) {
 	return s.baseSelect(false, table, fields, condition, fill...)
 }
 
 // SelectDistinct exec a select distinct statement
 func (s *Mysql) SelectDistinct(
-	table string, 
-	fields []string, 
-	condition string, 
+	table string,
+	fields []string,
+	condition string,
 	fill ...interface{},
-	) (results []map[string]string) {
+) (results []map[string]string) {
 	return s.baseSelect(true, table, fields, condition, fill...)
 }
 
