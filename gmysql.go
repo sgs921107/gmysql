@@ -122,35 +122,45 @@ func (s Mysql) PrepareInsert(table string, fields []string, values ...[]interfac
 }
 
 // SelectOne 查询一条数据 不支持select *
-func (s *Mysql) SelectOne(table string, fields []string, condition string, fill ...interface{}) map[string]string {
-	sql := fmt.Sprintf("select %s from %s %s;", strings.Join(fields, ","), table, condition)
-	row := s.cursor.QueryRow(sql, fill...)
-	scaner := make([]interface{}, len(fields))
-	for index := range fields {
-		var val string
-		scaner[index] = &val
-	}
-	err := row.Scan(scaner...)
-	if err != nil {
-		// 空数据也会引发错误，使用debug
-		log.WithFields(LogFields{
-			"sql": sql,
-			"fill": fill,
-			"errMsg": err.Error(),
-		}).Debug("Select failed")
-		return nil
-	}
-	var result = make(map[string]string)
-	for index, field := range fields {
-		val, _ := scaner[index].(*string)
-		result[field] = *val
-	}
-	return result
-}
+// func (s *Mysql) SelectOne(table string, fields []string, condition string, fill ...interface{}) map[string]string {
+// 	sql := fmt.Sprintf("select %s from %s %s;", strings.Join(fields, ","), table, condition)
+// 	scaner := make([]interface{}, len(fields))
+// 	for index := range fields {
+// 		var val string
+// 		scaner[index] = &val
+// 	}
+// 	err := s.cursor.QueryRow(sql, fill...).Scan(scaner...)
+// 	if err != nil {
+// 		// 空数据也会引发错误，使用debug
+// 		log.WithFields(LogFields{
+// 			"sql": sql,
+// 			"fill": fill,
+// 			"errMsg": err.Error(),
+// 		}).Debug("Select failed")
+// 		return nil
+// 	}
+// 	var result = make(map[string]string)
+// 	for index, field := range fields {
+// 		val, _ := scaner[index].(*string)
+// 		result[field] = *val
+// 	}
+// 	return result
+// }
 
-// Select exec a select statement nonsupport select * statement
-func (s *Mysql) Select(table string, fields []string, condition string, fill ...interface{}) (results []map[string]string) {
-	sql := fmt.Sprintf("select %s from %s %s;", strings.Join(fields, ","), table, condition)
+// baseSelect exec a select statement
+func (s *Mysql) baseSelect(
+	distinct bool, 
+	table string, 
+	fields []string, 
+	condition string, 
+	fill ...interface{},
+	) (results []map[string]string) {
+	var sql string
+	if distinct {
+		sql = fmt.Sprintf("select distinct %s from %s %s;", strings.Join(fields, ","), table, condition)
+	} else {
+		sql = fmt.Sprintf("select %s from %s %s;", strings.Join(fields, ","), table, condition)
+	}
 	rows, err := s.cursor.Query(sql, fill...)
 	if err != nil {
 		// 空数据也会引发错误，使用debug
@@ -162,9 +172,24 @@ func (s *Mysql) Select(table string, fields []string, condition string, fill ...
 		return results
 	}
 	defer rows.Close()
+	columns, err := rows.Columns()
+	if err != nil {
+		log.WithFields(LogFields{
+			"errMsg": err.Error(),
+		}).Error("Fetch columns failed")
+		return results
+	}
+	if len(columns) != len(fields) {
+		log.WithFields(LogFields{
+			"fields": fields,
+			"columns": columns,
+			"errMsg": "fields length is not equal to columns length",
+		}).Error("Fetch columns failed")
+		return results
+	}
 	for rows.Next() {
-		scaner := make([]interface{}, len(fields))
-		for index := range fields {
+		scaner := make([]interface{}, len(columns))
+		for index := range columns {
 			var val string
 			scaner[index] = &val
 		}
@@ -175,14 +200,44 @@ func (s *Mysql) Select(table string, fields []string, condition string, fill ...
 			}).Error("Scan Error")
 			continue
 		}
-		var item = make(map[string]string, len(fields))
-		for index, field := range fields {
+		var item = make(map[string]string, len(columns))
+		for index, column := range columns {
 			val, _ := scaner[index].(*string)
-			item[field] = *val
+			item[column] = *val
 		}
 		results = append(results, item)
 	}
 	return results
+}
+
+// Select exec a select statement
+func (s *Mysql) Select(
+	table string, 
+	fields []string, 
+	condition string, 
+	fill ...interface{},
+	) (results []map[string]string) {
+	return s.baseSelect(false, table, fields, condition, fill...)
+}
+
+// SelectDistinct exec a select distinct statement
+func (s *Mysql) SelectDistinct(
+	table string, 
+	fields []string, 
+	condition string, 
+	fill ...interface{},
+	) (results []map[string]string) {
+	return s.baseSelect(true, table, fields, condition, fill...)
+}
+
+// SelectOne 查询一条数据
+func (s *Mysql) SelectOne(table string, fields []string, condition string, fill ...interface{}) map[string]string {
+	condition += " limit 1"
+	results := s.Select(table, fields, condition, fill...)
+	if len(results) == 0 {
+		return nil
+	}
+	return results[0]
 }
 
 // Update update data
