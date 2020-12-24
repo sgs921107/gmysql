@@ -47,14 +47,14 @@ func (s *Mysql) ShowTables() (tables []string) {
 			log.WithFields(LogFields{
 				"errMsg": err.Error(),
 			}).Error("Scan Error")
-			break
+			return nil
 		}
 		tables = append(tables, table)
 	}
 	return tables
 }
 
-// Insert insert data 直接执行的方式
+// Insert insert data 直接执行的方式 注意：一次插入多个值，则结果的最新id为第一个插入的id
 func (s Mysql) Insert(table string, fields []string, values ...[]interface{}) (sql.Result, error) {
 	sql := fmt.Sprintf("insert ignore %s(%s) values", table, strings.Join(fields, ","))
 	fieldsNum := len(fields)
@@ -238,7 +238,7 @@ func (s *Mysql) Update(
 	data map[string]interface{},
 	condition string,
 	fill ...interface{},
-) (sql.Result, error) {
+) int64 {
 	sql := fmt.Sprintf("update %s set ", table)
 	var valFill []interface{}
 	var extensions []string
@@ -251,13 +251,45 @@ func (s *Mysql) Update(
 		sql += " " + condition + ";"
 		valFill = append(valFill, fill...)
 	}
-	return s.cursor.Exec(sql, valFill...)
+	ret, err := s.cursor.Exec(sql, valFill...)
+	if err != nil {
+		log.WithFields(LogFields{
+			"sql": sql,
+			"fill": valFill,
+			"errMsg": err.Error(),
+		}).Error("Update Failed")
+		return 0
+	}
+	id, err := ret.RowsAffected()
+	if err != nil {
+		log.WithFields(LogFields{
+			"errMsg": err.Error(),
+		}).Error("Update Succeed But Fetch RowsAffected Failed")
+		return 0
+	}
+	return id
 }
 
 // Delete delete
-func (s *Mysql) Delete(table, condition string, fill ...interface{}) (sql.Result, error) {
+func (s *Mysql) Delete(table, condition string, fill ...interface{}) int64 {
 	sql := fmt.Sprintf("delete from %s %s;", table, condition)
-	return s.cursor.Exec(sql, fill...)
+	ret, err := s.cursor.Exec(sql, fill...)
+	if err != nil {
+		log.WithFields(LogFields{
+			"sql": sql,
+			"fill": fill,
+			"errMsg": err.Error(),
+		}).Error("Delete Data Failed")
+		return 0
+	}
+	id, err := ret.RowsAffected()
+	if err != nil {
+		log.WithFields(LogFields{
+			"errMsg": err.Error(),
+		}).Error("Delete Data Succeed But Fetch RowsAffected Failed")
+		return 0
+	}
+	return id
 }
 
 // Exec exec a sql statement

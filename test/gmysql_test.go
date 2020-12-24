@@ -16,7 +16,7 @@ var options = &gmysql.Options{
 var mysql = gmysql.NewMysql(options)
 var table = "user"
 
-var createTableSQL = "CREATE TABLE user (" +
+var createTableSQL = "CREATE TABLE IF NOT EXISTS `user` (" +
 	"`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT," +
 	"`name` VARCHAR(20) NOT NULL DEFAULT ''," +
 	"`age` INT(11) NOT NULL DEFAULT '0'," +
@@ -62,9 +62,9 @@ func TestUpdate(t *testing.T) {
 	data := map[string]interface{}{
 		"age": 30,
 	}
-	_, err := mysql.Update(table, data, "where name=?", "Tom")
-	if err != nil {
-		t.Errorf("update failed: %s", err.Error())
+	ret := mysql.Update(table, data, "where name=?", "Tom")
+	if ret != 1 {
+		t.Errorf("update failed: ret == %d, want 1", ret)
 	}
 }
 
@@ -77,9 +77,9 @@ func TestSelectOne(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	_, err := mysql.Delete(table, "where age<?", 30)
-	if err != nil {
-		t.Errorf("delete data failed: %s", err.Error())
+	ret := mysql.Delete(table, "where age<?", 30)
+	if ret == 0 {
+		t.Errorf("delete data failed: ret == 0, want %d", ret)
 	}
 }
 
