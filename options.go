@@ -8,12 +8,13 @@
 package gmysql
 
 import (
+	"fmt"
 	"time"
 )
 
 // Options 实例化mysql的参数
 type Options struct {
-	Addr         string
+	Addr         string `default:"127.0.0.1:3306"`
 	Username     string
 	Password     string
 	Database     string
@@ -22,5 +23,23 @@ type Options struct {
 	MaxIdleConns int
 	MaxLifeTime  time.Duration
 	MaxIdleTime  time.Duration
-	driver       string
+	driver       string `default:"mysql"`
+}
+
+// DSN 获取mysql的dsn
+func (o *Options) DSN() string {
+	if o.Addr == "" || o.Username == "" || o.Password == "" || o.Database == "" {
+		panic("Addr/Username/Password/Database must not be empty str")
+	}
+	dsn := fmt.Sprintf(
+		"%s:%s@tcp(%s)/%s",
+		o.Username,
+		o.Password,
+		o.Addr,
+		o.Database,
+	)
+	if o.Charset != "" {
+		dsn += fmt.Sprintf("?charset=%s", o.Charset)
+	}
+	return dsn
 }
