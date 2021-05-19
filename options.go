@@ -23,7 +23,7 @@ type Options struct {
 	MaxIdleConns int
 	MaxLifeTime  time.Duration
 	MaxIdleTime  time.Duration
-	driver       string `default:"mysql"`
+	Driver       string `default:"mysql"`
 }
 
 // DSN 获取mysql的dsn

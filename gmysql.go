@@ -255,8 +255,8 @@ func (s *Mysql) Update(
 	ret, err := s.cursor.Exec(sql, valFill...)
 	if err != nil {
 		log.WithFields(LogFields{
-			"sql": sql,
-			"fill": valFill,
+			"sql":    sql,
+			"fill":   valFill,
 			"errMsg": err.Error(),
 		}).Error("Update Failed")
 		return 0
@@ -277,8 +277,8 @@ func (s *Mysql) Delete(table, condition string, fill ...interface{}) int64 {
 	ret, err := s.cursor.Exec(sql, fill...)
 	if err != nil {
 		log.WithFields(LogFields{
-			"sql": sql,
-			"fill": fill,
+			"sql":    sql,
+			"fill":   fill,
 			"errMsg": err.Error(),
 		}).Error("Delete Data Failed")
 		return 0
@@ -333,14 +333,14 @@ func (s *Mysql) init() {
 
 // NewMysql 实例化一个mysql
 func NewMysql(options *Options) *Mysql {
-	if options.driver == "" {
+	if options.Driver == "" {
 		t := reflect.TypeOf(*options)
-		field, _ := t.FieldByName("driver")
+		field, _ := t.FieldByName("Driver")
 		defaultDriver := field.Tag.Get("default")
-		reflect.ValueOf(&options.driver).Elem().SetString(defaultDriver)
+		reflect.ValueOf(&options.Driver).Elem().SetString(defaultDriver)
 	}
 	dsn := options.DSN()
-	db, err := sql.Open(options.driver, dsn)
+	db, err := sql.Open(options.Driver, dsn)
 	if err != nil {
 		panic(fmt.Sprintf("connect mysql failed: %s", err.Error()))
 	}
