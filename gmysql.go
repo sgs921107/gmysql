@@ -10,7 +10,6 @@ package gmysql
 import (
 	"database/sql"
 	"fmt"
-	"reflect"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -333,14 +332,7 @@ func (s *Mysql) init() {
 
 // NewMysql 实例化一个mysql
 func NewMysql(options *Options) *Mysql {
-	if options.Driver == "" {
-		t := reflect.TypeOf(*options)
-		field, _ := t.FieldByName("Driver")
-		defaultDriver := field.Tag.Get("default")
-		reflect.ValueOf(&options.Driver).Elem().SetString(defaultDriver)
-	}
-	dsn := options.DSN()
-	db, err := sql.Open(options.Driver, dsn)
+	db, err := sql.Open(options.GetDriver(), options.GetDSN())
 	if err != nil {
 		panic(fmt.Sprintf("connect mysql failed: %s", err.Error()))
 	}

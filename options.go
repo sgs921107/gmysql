@@ -9,6 +9,7 @@ package gmysql
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -26,8 +27,16 @@ type Options struct {
 	Driver       string `default:"mysql"`
 }
 
+func (o Options) GetDriver() string {
+	if o.Driver == "" {
+		field, _ := reflect.TypeOf(o).FieldByName("Driver")
+		return field.Tag.Get("default")
+	}
+	return o.Driver
+}
+
 // DSN 获取mysql的dsn
-func (o *Options) DSN() string {
+func (o *Options) GetDSN() string {
 	if o.Addr == "" || o.Username == "" || o.Password == "" || o.Database == "" {
 		panic("Addr/Username/Password/Database must not be empty str")
 	}
