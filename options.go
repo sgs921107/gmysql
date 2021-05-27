@@ -24,6 +24,7 @@ type Options struct {
 	MaxIdleConns int
 	MaxLifeTime  time.Duration
 	MaxIdleTime  time.Duration
+	ParseTime    bool
 	Driver       string `default:"mysql"`
 }
 
@@ -41,14 +42,15 @@ func (o *Options) GetDSN() string {
 		panic("Addr/Username/Password/Database must not be empty str")
 	}
 	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s)/%s",
+		"%s:%s@tcp(%s)/%s?parseTime=%t",
 		o.Username,
 		o.Password,
 		o.Addr,
 		o.Database,
+		o.ParseTime,
 	)
 	if o.Charset != "" {
-		dsn += fmt.Sprintf("?charset=%s", o.Charset)
+		dsn += fmt.Sprintf("&charset=%s", o.Charset)
 	}
 	return dsn
 }
